@@ -22,9 +22,10 @@ namespace Nuvem.DeploymentManager
             Console.Write("Press Enter to continue");
             Console.ReadLine();
 
-            //DoIt().Wait();
+            //Deploy().Wait();
             DeleteDeployment().Wait();
             //ChangeConfiguration().Wait();
+            //DeleteRoleInstance().Wait();
 
             Console.WriteLine("Done");
             Console.Read();
@@ -61,7 +62,25 @@ namespace Nuvem.DeploymentManager
             var blah = result;
         }
 
-        private static async Task DoIt()
+        private static async Task DeleteRoleInstance()
+        {
+            var credentials = new CertificateCloudCredentials("989b78f7-9b3a-4143-9061-33215a8aa09b", new X509Certificate2(@"C:\Charles-Azure.cer"));
+
+            var cloudServiceName = "nuvem-test-service";
+            var deploymentName = cloudServiceName + "Prod";
+
+            var computeManagementClient = new ComputeManagementClient(credentials);
+
+            var result = await computeManagementClient.Deployments.DeleteRoleInstanceByDeploymentNameAsync(cloudServiceName, deploymentName,
+                new DeploymentDeleteRoleInstanceParameters()
+                {
+                    Name = new[] {"Nuvem.Worker_IN_0"}
+                });
+
+            var blah = result;
+        }
+
+        private static async Task Deploy()
         {
             var credentials = new CertificateCloudCredentials("989b78f7-9b3a-4143-9061-33215a8aa09b", new X509Certificate2(@"C:\Charles-Azure.cer"));
 
@@ -74,7 +93,7 @@ namespace Nuvem.DeploymentManager
             var computeManagementClient = new ComputeManagementClient(credentials);
             var storageManagementClient = new StorageManagementClient(credentials);
 
-            // Does this only have to create once?
+            // Does this only have to be created once?
             //CreateCloudService(computeManagementClient, cloudServiceName, "Southeast Asia").Wait();
 
             var storageConnectionString = await GetStorageAccountConnectionString(storageManagementClient, "nuvem1");
@@ -82,6 +101,8 @@ namespace Nuvem.DeploymentManager
             var blobs = storageAccount.CreateCloudBlobClient();
             var container = blobs.GetContainerReference("deployments");
             await container.CreateIfNotExistsAsync();
+
+            // TODO: Obviously publicly accessible storage is not what we want for this
             await container.SetPermissionsAsync(new BlobContainerPermissions
                 {
                     PublicAccess = BlobContainerPublicAccessType.Container

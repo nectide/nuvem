@@ -7,8 +7,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.Diagnostics;
+using Microsoft.WindowsAzure.Diagnostics.Management;
 using Microsoft.WindowsAzure.ServiceRuntime;
 using Microsoft.WindowsAzure.Storage;
+using LogLevel = Microsoft.WindowsAzure.Diagnostics.LogLevel;
 
 namespace Nuvem.Worker
 {
@@ -39,6 +41,11 @@ namespace Nuvem.Worker
             // For information on handling configuration changes
             // see the MSDN topic at http://go.microsoft.com/fwlink/?LinkId=166357.
 
+            DiagnosticMonitorConfiguration config = DiagnosticMonitor.GetDefaultInitialConfiguration();
+            config.Logs.ScheduledTransferPeriod = TimeSpan.FromMinutes(1);
+            config.Logs.ScheduledTransferLogLevelFilter = LogLevel.Information;
+            DiagnosticMonitor.Start("Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString", config);
+
             bool result = base.OnStart();
 
             Trace.TraceInformation("Nuvem.Worker has been started");
@@ -49,6 +56,12 @@ namespace Nuvem.Worker
         public override void OnStop()
         {
             Trace.TraceInformation("Nuvem.Worker is stopping");
+
+            // TODO: Any non-transferred logs will be lost if they aren't transferred manually like so (not yet complete)
+            // Refer: http://msdn.microsoft.com/en-us/library/azure/gg433075.aspx
+            //var diagnosticManager = new DeploymentDiagnosticManager(RoleEnvironment.GetConfigurationSettingValue("Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString"), RoleEnvironment.DeploymentId);
+            //var roleInstanceDiagnosticManager = diagnosticManager.GetRoleInstanceDiagnosticManager("Nuvem.Worker", RoleEnvironment.CurrentRoleInstance.Id);
+            //var dataBuffersToTransfer = DataBufferName.Logs;
 
             this.cancellationTokenSource.Cancel();
             this.runCompleteEvent.WaitOne();
@@ -64,7 +77,7 @@ namespace Nuvem.Worker
             while (!cancellationToken.IsCancellationRequested)
             {
                 Trace.TraceInformation("Working");
-                await Task.Delay(1000);
+                await Task.Delay(TimeSpan.FromMinutes(2));
             }
         }
     }

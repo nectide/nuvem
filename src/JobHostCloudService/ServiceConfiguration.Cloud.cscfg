@@ -3,7 +3,8 @@
   <Role name="Nuvem.JobHost">
     <Instances count="2" />
     <ConfigurationSettings>
-      <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="UseDevelopmentStorage=true" />
+      <Setting name="Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString" value="DefaultEndpointsProtocol=https;AccountName=nuvem1;AccountKey=xQffMtz8orzWiIZ6VFex5TG/apruIvcazLWfxHj1xtkrKpWYsEvuN6cALG5T4Na3yKWA62c3QEOigOuAJy+LGw==" />
+      <Setting name="StorageAccountConnectionString" value="DefaultEndpointsProtocol=https;AccountName=nuvem1;AccountKey=xQffMtz8orzWiIZ6VFex5TG/apruIvcazLWfxHj1xtkrKpWYsEvuN6cALG5T4Na3yKWA62c3QEOigOuAJy+LGw=="/>
     </ConfigurationSettings>
   </Role>
 </ServiceConfiguration>

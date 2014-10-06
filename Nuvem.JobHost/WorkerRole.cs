@@ -10,6 +10,7 @@ using Microsoft.WindowsAzure;
 using Microsoft.WindowsAzure.Diagnostics;
 using Microsoft.WindowsAzure.ServiceRuntime;
 using Microsoft.WindowsAzure.Storage;
+using LogLevel = Microsoft.WindowsAzure.Diagnostics.LogLevel;
 
 namespace Nuvem.JobHost
 {
@@ -40,6 +41,11 @@ namespace Nuvem.JobHost
             // For information on handling configuration changes
             // see the MSDN topic at http://go.microsoft.com/fwlink/?LinkId=166357.
 
+            DiagnosticMonitorConfiguration config = DiagnosticMonitor.GetDefaultInitialConfiguration();
+            config.Logs.ScheduledTransferPeriod = TimeSpan.FromMinutes(1);
+            config.Logs.ScheduledTransferLogLevelFilter = LogLevel.Information;
+            DiagnosticMonitor.Start("Microsoft.WindowsAzure.Plugins.Diagnostics.ConnectionString", config);
+
             bool result = base.OnStart();
 
             Trace.TraceInformation("Nuvem.JobHost has been started");
@@ -61,17 +67,19 @@ namespace Nuvem.JobHost
 
         private async Task RunAsync(CancellationToken cancellationToken)
         {
-            await Task.Run(() => ProcessJobQueue(cancellationToken), cancellationToken);
+            await ProcessJobQueueAsync(cancellationToken);
         }
 
-        private void ProcessJobQueue(CancellationToken cancellationToken)
+        private async Task ProcessJobQueueAsync(CancellationToken cancellationToken)
         {
             var currentInterval = 0;
-            var maxInterval = 15;
+            var maxInterval = 30;
 
-            var storageAccount = CloudStorageAccount.Parse(ConfigurationManager.AppSettings["StorageAccountConnectionString"]);
+            var storageAccount = CloudStorageAccount.Parse(RoleEnvironment.GetConfigurationSettingValue("StorageAccountConnectionString"));
             var client = storageAccount.CreateCloudQueueClient();
             var queue = client.GetQueueReference("nuvem-job-queue");
+
+            await queue.CreateIfNotExistsAsync();
 
             while (!cancellationToken.IsCancellationRequested)
             {
@@ -86,7 +94,7 @@ namespace Nuvem.JobHost
                             var item = message.AsString;
                             // Start processing item
 
-                            Trace.TraceInformation("{0} -> Nuvem.JobHost is processing item: {1}", RoleEnvironment.CurrentRoleInstance.Id, item);
+                            Trace.TraceInformation("Nuvem.JobHost is processing item: {0}", item);
 
                             Thread.Sleep(TimeSpan.FromSeconds(15));
 
